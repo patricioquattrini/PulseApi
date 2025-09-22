@@ -2,8 +2,8 @@
 
 El proyecto está organizado en **tres carpetas principales**:
 
-- ç 
-  Contiene la API que provee las alertas originales (fuente de datos). Se le agrego una carpeta .env para no exponer la api.
+- **`src/`**
+  Contiene la API que provee las alertas originales (fuente de datos). Se le agrego una carpeta .env para no exponer la api-key.
 
 - **`ingestor/`**  
   Implementa la lógica para obtener los datos desde `src` y almacenarlos en la base de datos. También contiene un archivo .env con la api-key y credenciales de la bbdd.
