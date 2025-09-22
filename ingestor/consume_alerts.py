@@ -8,6 +8,7 @@ from models.users import save_scoring
 from utils import Utils
 from dotenv import load_dotenv
 import os
+from delete_old_data import delete_saved_items
 
 load_dotenv()
 
@@ -38,23 +39,35 @@ async def get_response(session: aiohttp.ClientSession, url: str):
         print(f"Error inesperado {e} en {url}")
         raise
 
-async def get_all_pages(total_pages: int):
+async def get_all_pages(total_pages: int, batch_size: int):
     async with aiohttp.ClientSession() as session:
-        tasks = [get_response(session, f"{API_BASE}{API_PARAMS}{p}") for p in range(1, total_pages + 1)]
-        alerts_pages = await asyncio.gather(*tasks, return_exceptions=True)
+        all_saved_items = []
+        try:
+            for i in range(1, total_pages + 1, batch_size):
+                batch = list(range(i, min(i + batch_size, total_pages + 1)))
 
-        # filtrar resultados válidos
-        items = []
-        for page in alerts_pages:
-            if isinstance(page, dict) and page.get("alerts"):
-                items.extend(page["alerts"])
-                print(f"Se agregaron {len(page['alerts'])} contenidos")
+                tasks = [get_response(session, f"{API_BASE}{API_PARAMS}{p}") for p in batch]
+                alerts_pages = await asyncio.gather(*tasks, return_exceptions=True)
 
-        tasks_bbdd = [save_scoring(item) for item in items]
-        await asyncio.gather(*tasks_bbdd)
+                items = []
+                for page_num, result in zip(batch, alerts_pages):
+                    if isinstance(result, Exception):
+                        print(f"[ERROR] Página {page_num} falló: {result!r}")
+                        raise result 
+                    elif isinstance(result, dict) and result.get("alerts"):
+                        items.extend(result["alerts"])
+                        print(f"[OK] Página Nro {page_num}")
 
-        tasks_bbdd = [save_history(item) for item in items]
-        await asyncio.gather(*tasks_bbdd)
+                if items:
+                    await asyncio.gather(*(save_scoring(item) for item in items))
+                    await asyncio.gather(*(save_history(item) for item in items))
+                    all_saved_items.extend(items)
+
+        except Exception as e:
+            print("Error! detectado. Se eliminará la data guardada en esta ejecución.")
+            await delete_saved_items(all_saved_items)
+            raise 
+
 
 async def init_db():
     await Utils.wait_for_db()
@@ -66,7 +79,8 @@ async def main():
     async with aiohttp.ClientSession() as session:
         res = await get_response(session, API_BASE)
         total_pages = res.get("total_pages", 1)
-        await get_all_pages(total_pages)
+        batch = min(100, round(total_pages*0.1))
+        await get_all_pages(total_pages, batch_size=batch)
 
 if __name__ == "__main__":
     asyncio.run(main())
