@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Configs y secretos
+.env
+*.env
+ssl/
+
+# Logs
+*.log
+
+# Docker
+*.pid
+docker-compose.override.yml
+*.swp
+
+# VSCode / IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Mac / Linux
+.DS_Store

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consultar Score</title>
+</head>
+<body>
+    <h1>Consultar Score de Usuario</h1>
+
+    <input type="text" id="userEmail" placeholder="Ingrese email del usuario">
+    <button id="btnConsultar">Consultar</button>
+
+    <p id="result"></p>
+
+    <script>
+        document.getElementById("btnConsultar").onclick = async function() {
+            const email = document.getElementById("userEmail").value.trim();
+            if (!email) {
+                document.getElementById("result").innerText = "Por favor ingrese un email.";
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json; charset=utf-8" },
+                    body: JSON.stringify({ email: email })
+                });
+
+
+                // Verifica si la respuesta es JSON
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await res.text();
+                    throw new Error("Respuesta no es JSON: " + text);
+                }
+
+                const data = await res.json();
+                if (data.score !== undefined) {
+                    document.getElementById("result").innerText = "Score: " + data.score;
+                } else if (data.error) {
+                    document.getElementById("result").innerText = "Error: " + data.error;
+                } else {
+                    document.getElementById("result").innerText = "Error desconocido";
+                }
+
+            } catch (err) {
+                document.getElementById("result").innerText = "Error: " + err.message;
+            }
+        };
+    </script>
+</body>
+</html>

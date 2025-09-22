@@ -1,0 +1,5 @@
+tenacity
+SQLAlchemy
+aiohttp
+asyncpg
+python-dotenv
